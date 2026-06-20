@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Evaluate expression with operator precedence (no parentheses)
+# Evaluate expression with operator precedence (no brackets)
 eval_simple() {
   # First pass: handle x and /
   acc=$1
@@ -12,8 +12,8 @@ eval_simple() {
     num=$2
     shift 2
     case "$op" in
-      x) acc=$((acc * num)) ;;
-      /) acc=$((acc / num)) ;;
+      x) acc=$(awk "BEGIN {printf \"%.10g\", $acc * $num}") ;;
+      /) acc=$(awk "BEGIN {printf \"%.10g\", $acc / $num}") ;;
       +|-) pass1="$pass1 $acc $op"; acc=$num ;;
       *) echo "Unsupported operator: $op" >&2; exit 1 ;;
     esac
@@ -30,8 +30,8 @@ eval_simple() {
     num=$2
     shift 2
     case "$op" in
-      +) result=$((result + num)) ;;
-      -) result=$((result - num)) ;;
+      +) result=$(awk "BEGIN {printf \"%.10g\", $result + $num}") ;;
+      -) result=$(awk "BEGIN {printf \"%.10g\", $result - $num}") ;;
     esac
   done
 
@@ -50,7 +50,6 @@ fi
 tokens="$*"
 
 while echo "$tokens" | grep -qF '['; do
-  # Find the last opening bracket
   set -- $tokens
   last_open=0
   pos=0
@@ -62,7 +61,6 @@ while echo "$tokens" | grep -qF '['; do
     shift
   done
 
-  # Split into before, inner (between last '[' and its matching ']'), after
   set -- $tokens
   before=""
   inner=""
@@ -90,10 +88,8 @@ while echo "$tokens" | grep -qF '['; do
     shift
   done
 
-  # Evaluate the inner expression and substitute
   inner_result=$(eval_simple $inner)
   tokens="$before $inner_result $after"
 done
 
-# Final evaluation with precedence
 eval_simple $tokens
