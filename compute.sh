@@ -1,13 +1,7 @@
 #!/bin/sh
 
-# Tokenize: insert spaces around operators and brackets
-tokenize() {
-  echo "$*" | sed 's/\[/ [ /g; s/\]/ ] /g; s/+/ + /g; s/-/ - /g; s/x/ x /g; s/\// \/ /g' | tr -s ' '
-}
-
-# Evaluate expression with operator precedence (no brackets)
+# Evaluate expression with operator precedence (no parentheses)
 eval_simple() {
-  # First pass: handle x and /
   acc=$1
   shift
   pass1=""
@@ -25,7 +19,6 @@ eval_simple() {
   done
   pass1="$pass1 $acc"
 
-  # Second pass: handle + and -
   set -- $pass1
   result=$1
   shift
@@ -43,24 +36,29 @@ eval_simple() {
   echo $result
 }
 
+# Tokenize: insert spaces around operators and parentheses
+tokenize() {
+  echo "$*" | sed 's/(/ ( /g; s/)/ ) /g; s/+/ + /g; s/-/ - /g; s/x/ x /g; s/\// \/ /g' | tr -s ' '
+}
+
 # Main
 if [ $# -lt 1 ]; then
-  echo "Usage: $0 <expression>"
+  echo "Usage: $0 \"<expression>\""
   echo "  Operators: +, -, x, /"
-  echo "  Brackets: [ and ]"
-  echo "  Example: $0 [2+3]x4"
+  echo "  Grouping: ( and )"
+  echo "  Example: $0 \"(2+3)x4\""
   exit 1
 fi
 
 tokens=$(tokenize "$*")
 
-while echo "$tokens" | grep -qF '['; do
+while echo "$tokens" | grep -qF '('; do
   set -- $tokens
   last_open=0
   pos=0
   while [ $# -gt 0 ]; do
     pos=$((pos + 1))
-    if [ "$1" = "[" ]; then
+    if [ "$1" = "(" ]; then
       last_open=$pos
     fi
     shift
@@ -82,7 +80,7 @@ while echo "$tokens" | grep -qF '['; do
         before="$before $1"
       fi
     elif [ "$state" = "inner" ]; then
-      if [ "$1" = "]" ]; then
+      if [ "$1" = ")" ]; then
         state="after"
       else
         inner="$inner $1"
