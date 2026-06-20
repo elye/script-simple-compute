@@ -1,6 +1,5 @@
 #!/bin/sh
 
-# Evaluate expression with operator precedence (no parentheses)
 eval_simple() {
   acc=$1
   shift
@@ -36,12 +35,58 @@ eval_simple() {
   echo $result
 }
 
-# Tokenize: insert spaces around operators and parentheses
 tokenize() {
   echo "$*" | sed 's/(/ ( /g; s/)/ ) /g; s/+/ + /g; s/-/ - /g; s/x/ x /g; s/\// \/ /g' | tr -s ' '
 }
 
-# Main
+validate() {
+  open=0
+  expect="number"
+
+  for t in $@; do
+    case "$t" in
+      '(')
+        if [ "$expect" != "number" ]; then
+          echo "Error: unexpected '(' (expected operator)" >&2; exit 1
+        fi
+        open=$((open + 1))
+        ;;
+      ')')
+        if [ "$expect" != "operator" ]; then
+          echo "Error: unexpected ')' (expected number)" >&2; exit 1
+        fi
+        open=$((open - 1))
+        if [ $open -lt 0 ]; then
+          echo "Error: unmatched ')'" >&2; exit 1
+        fi
+        ;;
+      +|-|x|/)
+        if [ "$expect" != "operator" ]; then
+          echo "Error: unexpected operator '$t' (expected number)" >&2; exit 1
+        fi
+        expect="number"
+        ;;
+      *)
+        case "$t" in
+          ''|*[!0-9.]*) echo "Error: invalid token '$t'" >&2; exit 1 ;;
+        esac
+        if [ "$expect" != "number" ]; then
+          echo "Error: unexpected number '$t' (expected operator)" >&2; exit 1
+        fi
+        expect="operator"
+        ;;
+    esac
+  done
+
+  if [ $open -ne 0 ]; then
+    echo "Error: unmatched '(' ($open unclosed)" >&2; exit 1
+  fi
+
+  if [ "$expect" != "operator" ]; then
+    echo "Error: expression ends with an operator" >&2; exit 1
+  fi
+}
+
 if [ $# -lt 1 ]; then
   echo "Usage: $0 \"<expression>\""
   echo "  Operators: +, -, x, /"
@@ -51,52 +96,7 @@ if [ $# -lt 1 ]; then
 fi
 
 tokens=$(tokenize "$*")
-
-# Validate matching parentheses
-open=0
-for t in $tokens; do
-  case "$t" in
-    '(') open=$((open + 1)) ;;
-    ')') open=$((open - 1)) ;;
-  esac
-  if [ $open -lt 0 ]; then
-    echo "Error: unmatched ')'" >&2
-    exit 1
-  fi
-done
-
-if [ $open -ne 0 ]; then
-  echo "Error: unmatched '(' ($open unclosed)" >&2
-  exit 1
-fi
-
-# Validate token pattern: num op num op num ...
-# (ignore parentheses for this check — validate the flat structure)
-check_tokens=$(echo "$tokens" | sed 's/(//g; s/)//g' | tr -s ' ')
-set -- $check_tokens
-pos=1
-for t in $@; do
-  if [ $((pos % 2)) -eq 1 ]; then
-    # Expect a number
-    case "$t" in
-      ''|*[!0-9.]*) echo "Error: expected a number at position $pos, got '$t'" >&2; exit 1 ;;
-    esac
-  else
-    # Expect an operator
-    case "$t" in
-      +|-|x|/) ;;
-      *) echo "Error: expected an operator at position $pos, got '$t'" >&2; exit 1 ;;
-    esac
-  fi
-  pos=$((pos + 1))
-done
-
-# Must end on a number (odd count)
-if [ $(($# % 2)) -ne 1 ]; then
-  echo "Error: expression ends with an operator" >&2
-  exit 1
-fi
-
+validate $tokens
 
 while echo "$tokens" | grep -qF '('; do
   set -- $tokens
