@@ -70,6 +70,34 @@ if [ $open -ne 0 ]; then
   exit 1
 fi
 
+# Validate token pattern: num op num op num ...
+# (ignore parentheses for this check — validate the flat structure)
+check_tokens=$(echo "$tokens" | sed 's/(//g; s/)//g' | tr -s ' ')
+set -- $check_tokens
+pos=1
+for t in $@; do
+  if [ $((pos % 2)) -eq 1 ]; then
+    # Expect a number
+    case "$t" in
+      ''|*[!0-9.]*) echo "Error: expected a number at position $pos, got '$t'" >&2; exit 1 ;;
+    esac
+  else
+    # Expect an operator
+    case "$t" in
+      +|-|x|/) ;;
+      *) echo "Error: expected an operator at position $pos, got '$t'" >&2; exit 1 ;;
+    esac
+  fi
+  pos=$((pos + 1))
+done
+
+# Must end on a number (odd count)
+if [ $(($# % 2)) -ne 1 ]; then
+  echo "Error: expression ends with an operator" >&2
+  exit 1
+fi
+
+
 while echo "$tokens" | grep -qF '('; do
   set -- $tokens
   last_open=0
