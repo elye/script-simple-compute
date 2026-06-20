@@ -6,6 +6,31 @@ if [ $# -lt 3 ] || [ $(($# % 2)) -ne 1 ]; then
   exit 1
 fi
 
+# First pass: evaluate x and /
+args=""
+acc=$1
+pending_op=""
+shift
+
+while [ $# -ge 2 ]; do
+  op=$1
+  num=$2
+  shift 2
+
+  case "$op" in
+    x) acc=$((acc * num)) ;;
+    /) acc=$((acc / num)) ;;
+    +|-) 
+      args="$args $acc $op"
+      acc=$num
+      ;;
+    *) echo "Unsupported operator: $op"; exit 1 ;;
+  esac
+done
+args="$args $acc"
+
+# Second pass: evaluate + and -
+set -- $args
 result=$1
 shift
 
@@ -17,9 +42,6 @@ while [ $# -ge 2 ]; do
   case "$op" in
     +) result=$((result + num)) ;;
     -) result=$((result - num)) ;;
-    x) result=$((result * num)) ;;
-    /) result=$((result / num)) ;;
-    *) echo "Unsupported operator: $op"; exit 1 ;;
   esac
 done
 
