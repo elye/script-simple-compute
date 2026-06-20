@@ -52,6 +52,24 @@ fi
 
 tokens=$(tokenize "$*")
 
+# Validate matching parentheses
+open=0
+for t in $tokens; do
+  case "$t" in
+    '(') open=$((open + 1)) ;;
+    ')') open=$((open - 1)) ;;
+  esac
+  if [ $open -lt 0 ]; then
+    echo "Error: unmatched ')'" >&2
+    exit 1
+  fi
+done
+
+if [ $open -ne 0 ]; then
+  echo "Error: unmatched '(' ($open unclosed)" >&2
+  exit 1
+fi
+
 while echo "$tokens" | grep -qF '('; do
   set -- $tokens
   last_open=0
