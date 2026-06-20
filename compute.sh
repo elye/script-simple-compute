@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# Tokenize: insert spaces around operators and brackets
+tokenize() {
+  echo "$*" | sed 's/\[/ [ /g; s/\]/ ] /g; s/+/ + /g; s/-/ - /g; s/x/ x /g; s/\// \/ /g' | tr -s ' '
+}
+
 # Evaluate expression with operator precedence (no brackets)
 eval_simple() {
   # First pass: handle x and /
@@ -38,16 +43,16 @@ eval_simple() {
   echo $result
 }
 
-# Main: resolve brackets from innermost out, then evaluate
+# Main
 if [ $# -lt 1 ]; then
   echo "Usage: $0 <expression>"
   echo "  Operators: +, -, x, /"
   echo "  Brackets: [ and ]"
-  echo "  Example: $0 [ 2 + 3 ] x 4"
+  echo "  Example: $0 [2+3]x4"
   exit 1
 fi
 
-tokens="$*"
+tokens=$(tokenize "$*")
 
 while echo "$tokens" | grep -qF '['; do
   set -- $tokens
