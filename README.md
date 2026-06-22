@@ -12,7 +12,6 @@ quick utility.
 ```
 git-bisect/
 ├── compute.sh   # The script that evaluates an expression
-├── test.sh      # A tiny test harness that verifies the script
 └── README.md    # This documentation file
 ```
 
