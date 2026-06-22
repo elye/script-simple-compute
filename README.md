@@ -52,21 +52,6 @@ $ ./compute.sh "(1+2)(3+4)"
 21
 ```
 
-### Running the test harness
-
-The repository ships a very small `test.sh` script that verifies the
-behaviour of `compute.sh`.  It can be executed directly:
-
-```bash
-./test.sh
-# Expected output:
-# PASS: compute.sh "(2+3)x4" -> 20
-# PASS: compute.sh "10/2+3" -> 8
-# PASS: compute.sh "(1+2)(3+4)" -> 21
-```
-
-If any test fails, the harness will exit with a non‑zero status.
-
 ## Development
 
 The script is written in POSIX‑compatible Bash and contains minimal
